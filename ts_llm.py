@@ -78,7 +78,7 @@ class LLM_wrapper(nn.Module):
         self.device=device
         ##resize the llm_embedding layer based on modified tokenizer
         self.llm_model.resize_token_embeddings(len(self.tokenizer))
-
+        
         if embed_path:
             self.llm_model.get_input_embeddings().load_state_dict(torch.load(embed_path))
             
@@ -105,7 +105,7 @@ class LLM_wrapper(nn.Module):
         labels_list=[]
         assemb_labels=[]
         channels=ts_pairs.shape[1]
-        print(f'sliced_ts_embedding:{ts_embeddings.shape}')
+        ##print(f'sliced_ts_embedding:{ts_embeddings.shape}')
         ts_embeddings=ts_embeddings.view(-1,channels,10,self.embed_size)
         ts_embeddings.to(self.device)
         bs=ts_embeddings.shape[0]
@@ -115,7 +115,6 @@ class LLM_wrapper(nn.Module):
     
         input_embeds=self.llm_model.get_input_embeddings()(input_ids) ##seq_len,d_emb
         input_embeds.requires_grad_(requires_grad=True)
-        print(f'input_embed : {input_embeds.grad_fn}')
         text_emb_dim= input_embeds.shape[2]
         assert (ts_emb_dim==text_emb_dim)
     ##inplace operation to adjust ts_pairs 
@@ -134,7 +133,7 @@ class LLM_wrapper(nn.Module):
             flat_ts_embeddings=flat_ts_embeddings.squeeze(0) ##[c_in*ts_tokens,emb_dim]
             input_embeds=input_embeds.squeeze(0)
 
-    ##total_seq_len = text_tokens + ts_tokens
+        ##total_seq_len = text_tokens + ts_tokens
         T_new = input_embeds.shape[0]+ c_in*num_ts_tokens
         local_indices= torch.arange(num_ts_tokens,device=device).repeat(c_in, 1)
     
@@ -173,7 +172,6 @@ class LLM_wrapper(nn.Module):
         ##convert the ts_patches into ts_embeddings
         ts_tensor = ts_input.view(-1,self.max_patches,self.max_channel,self.P).to(self.device)  ## (bs,N,c_in,P)
         ts_embedding = self.ts_encoder(ts_tensor.to(self.device),ch_mask) ## (bs,n_vars,num_patch,d_model)
-        print(f'ts_mask_shape:{ts_mask.shape}')
         ts_embedding_sliced =ts_embedding[ts_masks] ##flattened ts_embeddings
         ## two variables returned by assemb_embeds
         input_embeddings,lable_batch = self.assemble_input_embeds(input_ids,ts_embedding_sliced,ts_pairs,labels)
@@ -183,7 +181,6 @@ class LLM_wrapper(nn.Module):
         ##print(f'attn_mask_shape:{attention_mask}')
         labels = lable_batch.to(self.device)
         ##print(f'labels)
-        print(f'label_shape{labels.shape}')
         output=self.peft_model(inputs_embeds=input_embeddings,attention_mask=attention_mask,labels=lable_batch)
         
         return output,input_embeddings,ts_embedding_sliced
@@ -208,7 +205,7 @@ for name, param in model_wrapper.ts_encoder.named_parameters():
    p.requires_grad=True"""
 
 encoder_params = list(model_wrapper.ts_encoder.parameters())
-llm_trainable_params = [p for n, p in model_wrapper.peft_model.named_parameters() if p.requires_grad]
+llm_trainable_params = [p for n,p in model_wrapper.peft_model.named_parameters() if p.requires_grad]
 
 optimizer = torch.optim.AdamW([
     {'params': encoder_params, 'lr': 1e-4},      # Physics: Fast learning
@@ -235,8 +232,6 @@ for epoch in range(1):  ##1 epochs
         outputs,inputs,ts_embeds =model_wrapper(input_ids=input_ids,ts_input=ts_input,ts_pairs=ts_pairs,ts_masks=ts_mask,ch_mask=ch_mask,attention_mask=attention_mask,labels=labels_batch)
         loss=outputs.loss
         
-        ##inputs.retain_grad()
-        ##ts_embeds.retain_grad()
         loss.backward()  ##gradient calculation
         ###check_ts_gradients(model_wrapper.ts_encoder)
         ##track_gradients(ts_encoder)
