@@ -31,8 +31,10 @@ os.environ["HF_HUB_OFFLINE"] = "1"""
 model_name='microsoft/Phi-4-mini-reasoning'
 model = AutoModelForCausalLM.from_pretrained(model_name,local_files_only=True)
 tokenizer =AutoTokenizer.from_pretrained(model_name,local_files_only=True)
+print('model_loaded')
 tokenizer_path =os.path.join(os.environ["SLURM_TMPDIR"],'llm_tokenizer')
 tokenizer_modified = AutoTokenizer.from_pretrained(tokenizer_path)
+print('tokenizer_loaded')
 
 device ='cuda' if torch.cuda.is_available() else 'cpu'
 model_dtype=next(model.parameters()).dtype
