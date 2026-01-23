@@ -45,6 +45,6 @@ class ts_encoder_mlp(nn.Module):
         x_reshaped = ts_plus_embed.view(bs,N,self.max_channel,-1)
         
         z = self.W_p(x_reshaped)
-        print(f'z.shape before return: {z.shape}')
+        ##print(f'z.shape before return: {z.shape}')
         return z.view(bs,max_ch,N,-1)  ## (bs,N,c_in,d_model)
 
