@@ -10,7 +10,7 @@ from peft import get_peft_model
 from peft import LoraConfig, get_peft_model
 from transformers import AutoModelForCausalLM,AutoTokenizer
 import torch
-from TS_encoder import PatchTSTEncoder
+##from TS_encoder import PatchTSTEncoder
 import sys
 import os
 import json
