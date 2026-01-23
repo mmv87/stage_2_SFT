@@ -18,15 +18,21 @@ class ts_multimodal_text(Dataset):
         self.s=stride
         self.file_path=file
         self.offsets=[]
+        self.invalid_indices={10995, 23561, 38838} ## figured out 
         
         with open(self.file_path,'rb') as f:
             offset=0
             for line in f:
                 self.offsets.append(offset)
                 offset+=len(line)
+                
+        self.valid_indices = [
+            i for i in range(len(self.offsets))
+            if i not in self.invalid_indices
+        ]
     
     def __len__(self):
-        return len(self.offsets)
+        return len(self.valid_indices)
         
     ## to patchify/sliding window operation of the ts_input
     ## the continuous stream of number is converted in to N,P
@@ -108,10 +114,11 @@ class ts_multimodal_text(Dataset):
         return ts_pairs,input_ids
         
     def __getitem__(self,idx):
+        file_idx = self.valid_indices[idx]
         
         # 2. Fetch the specific line from disk
         with open(self.file_path, 'rb') as f:
-            f.seek(self.offsets[idx])
+            f.seek(self.offsets[file_idx]) ## file index based on the filtered index 
             line = f.readline()
             sample = json.loads(line)
             
