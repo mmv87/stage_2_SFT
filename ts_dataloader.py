@@ -4,27 +4,29 @@
 ### for the subset of the dataset
 from torch.utils.data import Dataset,DataLoader
 import torch
+import json
 device ='cuda' if torch.cuda.is_available() else 'cpu'
 
 ## Dataset class to get the pipeline for a sample
 class ts_multimodal_text(Dataset):
-    def __init__(self,patch_len,stride,data,tokenizer,device=device,model_dtype=None):
-        self.data = data
+    def __init__(self,patch_len,stride,file,tokenizer,device=device,model_dtype=None):
+        ##self.data = data
         self.tokenizer = tokenizer
         self.mode_dtype=model_dtype
         self.device=device
         self.p=patch_len 
         self.s=stride
-        ##self.offsets=[]
+        self.file_path=file
+        self.offsets=[]
         
-        """with open(self.file_path,'rb') as f:
+        with open(self.file_path,'rb') as f:
             offset=0
             for line in f:
                 self.offsets.append(offset)
-                offset+=len(line)"""
+                offset+=len(line)
     
     def __len__(self):
-        return len(self.data)
+        return len(self.offsets)
         
     ## to patchify/sliding window operation of the ts_input
     ## the continuous stream of number is converted in to N,P
@@ -106,12 +108,14 @@ class ts_multimodal_text(Dataset):
         return ts_pairs,input_ids
         
     def __getitem__(self,idx):
+        
         # 2. Fetch the specific line from disk
-        """with open(self.file_path, 'rb') as f:
+        with open(self.file_path, 'rb') as f:
             f.seek(self.offsets[idx])
             line = f.readline()
-            sample = json.loads(line)"""    
-        sample=self.data[idx]
+            sample = json.loads(line)
+            
+        ###sample=self.data[idx]
         prompt=sample['input']
         output=sample['output']
         timeseries=sample['timeseries']
@@ -175,8 +179,6 @@ class ts_multimodal_text(Dataset):
                 'ts_pairs':ts_pairs,      ##list of ts_data(tensors) of size (1,N_i,P)
                 'patch_mismatch':False,
                 'ts_mask':torch.stack(ts_mask,dim=0)}  
-
-
 
 ## applies transformation on the individual samples in a batch
 ##padding along the channel dimensions to max_channel length 10

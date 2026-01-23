@@ -42,7 +42,7 @@ model_dtype=next(model.parameters()).dtype
 ###load the dataset from .jsonl file
 _json_path=os.path.join(os.environ["SLURM_TMPDIR"],"processed_dataset.jsonl")
 
-def dataset_align(file):
+"""def dataset_align(file):
     list_data=[]
     with open(file,'r',encoding='utf-8') as file:
         for idx,line in enumerate(file):
@@ -52,11 +52,13 @@ def dataset_align(file):
             else:
                 break
 
-    return list_data
+    return list_data"""
 
-sft_dataset = dataset_align(_json_path)
+##sft_dataset = dataset_align(_json_path)
 
-dataset=ts_multimodal_text(256,256,sft_dataset,tokenizer_modified,device=device,model_dtype=None)
+## dataset instantiation
+dataset=ts_multimodal_text(256,256,_json_path,tokenizer_modified,device=device,model_dtype=None)
+##dataloader
 dataloader=DataLoader(dataset,batch_size=1,shuffle=True,collate_fn=lambda b:collate_func(b,tokenizer=tokenizer_modified,device=device))
 
 ##Lora_config defintion based on best practices
